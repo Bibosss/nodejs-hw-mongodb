@@ -7,6 +7,7 @@ import {
   updateContact,
   deleteContactByID,
 } from '../services/contacts.js';
+// import { contactAddSchema } from '../validation/contacts.js';
 
 export const getContactsController = async (req, res, next) => {
   const data = await getContacts();
@@ -34,6 +35,12 @@ export const getContactIdController = async (req, res, next) => {
 };
 
 export const addContactController = async (req, res, next) => {
+  // const { error } = contactAddSchema.validate(req.body);
+
+  // if (error) {
+  //   throw createHttpError(400, error.message);
+  // }
+
   const data = await addContact(req.body);
 
   res.status(201).json({
@@ -66,13 +73,12 @@ export const patchContactController = async (req, res, next) => {
     throw createHttpError(404, 'Contact not found');
   }
 
-  const { data, isNew } = result;
+  const { data } = result;
 
   res.json({
     status: 200,
     message: 'Successfully update contact',
     data,
-    isNew,
   });
 };
 
