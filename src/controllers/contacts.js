@@ -15,6 +15,8 @@ import { contactAddSchema } from '../validation/contacts.js';
 export const getContactsController = async (req, res, next) => {
   const paginationParams = parsePaginationParams(req.query);
   const sortParams = parseSortParams(req.query, contactsSortFields);
+  // const { _id: userId } = req.user;
+  // paginationParams.userId = req.user._id;
 
   const data = await getContacts({ ...paginationParams, ...sortParams });
   res.json({
@@ -41,13 +43,15 @@ export const getContactIdController = async (req, res, next) => {
 };
 
 export const addContactController = async (req, res, next) => {
+  const { _id: userId } = req.user;
+
   const { error } = contactAddSchema.validate(req.body);
 
   if (error) {
     throw createHttpError(400, error.message);
   }
 
-  const data = await addContact(req.body);
+  const data = await addContact({ ...req.body, userId });
 
   res.status(201).json({
     status: 201,
