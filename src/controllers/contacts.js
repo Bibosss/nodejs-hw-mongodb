@@ -7,10 +7,23 @@ import {
   updateContact,
   deleteContactByID,
 } from '../services/contacts.js';
-// import { contactAddSchema } from '../validation/contacts.js';
+import { parsePaginationParams } from '../utils/parsePaginationParams.js';
+import { parseSortParams } from '../utils/parseSortParams.js';
+import { contactsSortFields } from '../db/models/contacts.js';
+import { contactAddSchema } from '../validation/contacts.js';
+import { parseContactFilterParams } from '../utils/filters/parseContactFilterParams.js';
 
 export const getContactsController = async (req, res, next) => {
-  const data = await getContacts();
+  const paginationParams = parsePaginationParams(req.query);
+  const sortParams = parseSortParams(req.query, contactsSortFields);
+  const filters = parseContactFilterParams(req.query);
+  filters.userId = req.user._id;
+
+  const data = await getContacts({
+    ...paginationParams,
+    ...sortParams,
+    filters,
+  });
   res.json({
     status: 200,
     message: 'Successfully found contacts!',
@@ -35,13 +48,15 @@ export const getContactIdController = async (req, res, next) => {
 };
 
 export const addContactController = async (req, res, next) => {
-  // const { error } = contactAddSchema.validate(req.body);
+  const { _id: userId } = req.user;
 
-  // if (error) {
-  //   throw createHttpError(400, error.message);
-  // }
+  const { error } = contactAddSchema.validate(req.body);
 
-  const data = await addContact(req.body);
+  if (error) {
+    throw createHttpError(400, error.message);
+  }
+
+  const data = await addContact({ ...req.body, userId });
 
   res.status(201).json({
     status: 201,
