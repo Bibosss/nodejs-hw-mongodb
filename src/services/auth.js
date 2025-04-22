@@ -1,6 +1,9 @@
 import bcrypt from 'bcrypt';
 import createHttpError from 'http-errors';
 import { randomBytes } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import Handlebars from 'handlebars';
 
 import UserCollection from '../db/models/User.js';
 import SessionCollection from '../db/models/session.js';
@@ -8,6 +11,9 @@ import {
   accessTokenLifeTime,
   refreshTokenLifeTime,
 } from '../constants/auth.js';
+import { sendEmail } from '../utils/sendEmail.js';
+import { TEMPLATES_DIR } from '../constants/index.js';
+import { getEnvVar } from '../utils/getEnvVar.js';
 
 const createSession = () => {
   const accessToken = randomBytes(30).toString('base64');
@@ -28,6 +34,8 @@ export const findSession = (query) => SessionCollection.findOne(query);
 
 export const findUser = (query) => UserCollection.findOne(query);
 
+const verifyEmailPath = path.join(TEMPLATES_DIR, 'verify-email.html');
+
 export const registerUser = async (payload) => {
   const { email, password } = payload;
   const user = await findUser({ email });
@@ -37,7 +45,27 @@ export const registerUser = async (payload) => {
 
   const hashPassword = await bcrypt.hash(password, 10);
 
-  return await UserCollection.create({ ...payload, password: hashPassword });
+  const newUser = await UserCollection.create({
+    ...payload,
+    password: hashPassword,
+  });
+
+  const templateSource = await fs.readFile(verifyEmailPath, 'utf-8');
+  const template = Handlebars.compile(templateSource);
+  const html = template({
+    verifyLink: `${getEnvVar('APP_DOMAIN')}/auth/reset-password?token=`,
+  });
+
+  const verifyEmail = {
+    from: getEnvVar('SMTP_USER'),
+    to: email,
+    subject: 'Verify email',
+    html,
+  };
+
+  await sendEmail(verifyEmail);
+
+  return newUser;
 };
 
 export const loginUser = async (payload) => {
@@ -45,6 +73,10 @@ export const loginUser = async (payload) => {
   const user = await findUser({ email });
   if (!user) {
     throw createHttpError(401, 'Email or password invalid');
+  }
+
+  if (!user.verify) {
+    throw createHttpError(401, 'Email not verified');
   }
 
   const passwordCompare = await bcrypt.compare(password, user.password);
