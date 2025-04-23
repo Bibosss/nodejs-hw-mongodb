@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import Handlebars from 'handlebars';
+import jwt from 'jsonwebtoken';
 
 import UserCollection from '../db/models/User.js';
 import SessionCollection from '../db/models/session.js';
@@ -12,7 +13,7 @@ import {
   refreshTokenLifeTime,
 } from '../constants/auth.js';
 import { sendEmail } from '../utils/sendEmail.js';
-import { TEMPLATES_DIR } from '../constants/index.js';
+import { SMTP, TEMPLATES_DIR } from '../constants/index.js';
 import { getEnvVar } from '../utils/getEnvVar.js';
 
 const createSession = () => {
@@ -45,27 +46,7 @@ export const registerUser = async (payload) => {
 
   const hashPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await UserCollection.create({
-    ...payload,
-    password: hashPassword,
-  });
-
-  const templateSource = await fs.readFile(verifyEmailPath, 'utf-8');
-  const template = Handlebars.compile(templateSource);
-  const html = template({
-    verifyLink: `${getEnvVar('APP_DOMAIN')}/auth/reset-password?token=`,
-  });
-
-  const verifyEmail = {
-    from: getEnvVar('SMTP_USER'),
-    to: email,
-    subject: 'Verify email',
-    html,
-  };
-
-  await sendEmail(verifyEmail);
-
-  return newUser;
+  return await UserCollection.create({ ...payload, password: hashPassword });
 };
 
 export const loginUser = async (payload) => {
@@ -117,3 +98,37 @@ export const refreshUser = async ({ refreshToken, sessionId }) => {
 
 export const logoutUser = (sessionId) =>
   SessionCollection.deleteOne({ _id: sessionId });
+
+export const sendResetEmail = async (email) => {
+  const user = await UserCollection.findOne({ email });
+  if (!user) {
+    throw createHttpError(404, 'User not found');
+  }
+
+  const resetToken = jwt.sign(
+    {
+      userId: user._id,
+      email,
+    },
+    getEnvVar('JWT_SECRET'),
+    { expiresIn: '5m' },
+  );
+
+  const templateFile = await fs.readFile(verifyEmailPath, 'utf-8');
+
+  const template = Handlebars.compile(templateFile);
+
+  const html = template({
+    name: user.name,
+    verifyLink: `${getEnvVar(
+      'APP_DOMAIN',
+    )}/auth/reset-password?token=${resetToken}`,
+  });
+
+  await sendEmail({
+    from: getEnvVar(SMTP.FROM),
+    to: email,
+    subject: 'Reset your password',
+    html,
+  });
+};
