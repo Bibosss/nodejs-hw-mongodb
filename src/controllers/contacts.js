@@ -10,12 +10,10 @@ import {
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { contactsSortFields } from '../db/models/contacts.js';
-import { contactAddSchema } from '../validation/contacts.js';
-import { parseContactFilterParams } from '../utils/filters/parseContactFilterParams.js';
-// import { saveFileToLocal } from '../utils/saveFileToLocal.js';
-import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 // import { contactAddSchema } from '../validation/contacts.js';
 // import { parseContactFilterParams } from '../utils/filters/parseContactFilterParams.js';
+// import { saveFileToLocal } from '../utils/saveFileToLocal.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getContactsController = async (req, res, next) => {
   const paginationParams = parsePaginationParams(req.query);
@@ -57,8 +55,6 @@ export const getContactIdController = async (req, res, next) => {
 export const addContactController = async (req, res, next) => {
   const { _id: userId } = req.user;
   let photo = null;
-
-  const { error } = contactAddSchema.validate(req.body);
 
   const data = await addContact({ ...req.body, userId, photo });
 
