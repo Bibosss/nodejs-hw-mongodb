@@ -10,8 +10,6 @@ import {
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { contactsSortFields } from '../db/models/contacts.js';
-// import { contactAddSchema } from '../validation/contacts.js';
-// import { parseContactFilterParams } from '../utils/filters/parseContactFilterParams.js';
 
 export const getContactsController = async (req, res, next) => {
   const paginationParams = parsePaginationParams(req.query);
