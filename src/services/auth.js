@@ -56,9 +56,9 @@ export const loginUser = async (payload) => {
     throw createHttpError(401, 'Email or password invalid');
   }
 
-  if (!user.verify) {
-    throw createHttpError(401, 'Email not verified');
-  }
+  // if (!user.verify) {
+  //   throw createHttpError(401, 'Email not verified');
+  // }
 
   const passwordCompare = await bcrypt.compare(password, user.password);
   if (!passwordCompare) {
@@ -120,15 +120,47 @@ export const sendResetEmail = async (email) => {
 
   const html = template({
     name: user.name,
-    verifyLink: `${getEnvVar(
-      'APP_DOMAIN',
-    )}/auth/reset-password?token=${resetToken}`,
+    link: `${getEnvVar('APP_DOMAIN')}/auth/reset-password?token=${resetToken}`,
   });
 
-  await sendEmail({
-    from: getEnvVar(SMTP.FROM),
-    to: email,
-    subject: 'Reset your password',
-    html,
+  try {
+    await sendEmail({
+      from: getEnvVar(SMTP.FROM),
+      to: email,
+      subject: 'Reset your password',
+      html,
+    });
+  } catch (error) {
+    throw createHttpError(
+      500,
+      'Failed to send the email, please try again later.',
+    );
+  }
+};
+
+export const resetPassword = async (payload) => {
+  let entries;
+
+  try {
+    entries = jwt.verify(payload.token, getEnvVar('JWT_SECRET'));
+  } catch (err) {
+    if (err instanceof Error) throw createHttpError(401, err.message);
+    throw err;
+  }
+
+  const user = await UserCollection.findOne({
+    email: entries.email,
+    _id: entries.userId,
   });
+
+  if (!user) {
+    throw createHttpError(404, 'User not found');
+  }
+
+  const encryptedPassword = await bcrypt.hash(payload.password, 10);
+
+  await UserCollection.updateOne(
+    { _id: user._id },
+    { password: encryptedPassword },
+  );
 };
