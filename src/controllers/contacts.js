@@ -89,12 +89,10 @@ export const patchContactController = async (req, res, next) => {
     throw createHttpError(404, 'Contact not found');
   }
 
-  const { data } = result;
-
   res.json({
     status: 200,
     message: 'Successfully update contact',
-    data,
+    data: result,
   });
 };
 

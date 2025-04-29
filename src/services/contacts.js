@@ -36,23 +36,35 @@ export const getContactId = (contactId, userId) =>
 
 export const addContact = (payload) => ContactColection.create(payload);
 
-export const updateContact = async (_id, payload, options = {}, userId) => {
-  const { upsert = false } = options;
-  const rawResult = await ContactColection.findOneAndUpdate(
+// export const updateContact = async (_id, payload, options = {}, userId) => {
+//   const { upsert = false } = options;
+//   const rawResult = await ContactColection.findOneAndUpdate(
+//     { _id, userId },
+//     payload,
+//     {
+//       upsert,
+//       includeResultMetadata: true,
+//     },
+//   );
+
+//   if (!rawResult || !rawResult.value) return null;
+
+//   return {
+//     data: rawResult.value,
+//     isNew: Boolean(rawResult.lastErrorObject.upserted),
+//   };
+// };
+
+export const updateContact = async (_id, payload, userId) => {
+  const result = await ContactColection.findOneAndUpdate(
     { _id, userId },
     payload,
     {
-      upsert,
-      includeResultMetadata: true,
+      new: true,
     },
   );
 
-  if (!rawResult || !rawResult.value) return null;
-
-  return {
-    data: rawResult.value,
-    isNew: Boolean(rawResult.lastErrorObject.upserted),
-  };
+  return result;
 };
 
 export const deleteContactByID = (_id, userId) =>
