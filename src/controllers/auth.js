@@ -89,3 +89,7 @@ export const resetPasswordController = async (req, res) => {
     data: {},
   });
 };
+
+export const getGoogleOAuthLink = (req, res) => {};
+
+export const singUpOrLoginWithGoogle = (req, res) => {};
