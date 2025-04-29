@@ -70,6 +70,7 @@ export const upsertContactController = async (req, res, next) => {
     {
       upsert: true,
     },
+    userId,
   );
   const status = isNew ? 201 : 200;
 

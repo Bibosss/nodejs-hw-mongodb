@@ -36,6 +36,26 @@ export const getContactId = (contactId, userId) =>
 
 export const addContact = (payload) => ContactColection.create(payload);
 
+export const updateContact = async (_id, payload, options = {}, userId) => {
+  const { upsert = false } = options;
+  const result = await ContactColection.findOneAndUpdate(
+    { _id, userId: payload.userId },
+    payload,
+    {
+      new: true,
+      upsert,
+      includeResultMetadata: true,
+    },
+  );
+  return {
+    data: result.value,
+    isNew: upsert && result.lastErrorObject?.upserted,
+  };
+};
+
+export const deleteContactByID = (_id, userId) =>
+  ContactColection.findOneAndDelete({ _id, userId });
+
 // export const updateContact = async (_id, payload, options = {}, userId) => {
 //   const { upsert = false } = options;
 //   const rawResult = await ContactColection.findOneAndUpdate(
@@ -54,18 +74,3 @@ export const addContact = (payload) => ContactColection.create(payload);
 //     isNew: Boolean(rawResult.lastErrorObject.upserted),
 //   };
 // };
-
-export const updateContact = async (_id, payload, userId) => {
-  const result = await ContactColection.findOneAndUpdate(
-    { _id, userId },
-    payload,
-    {
-      new: true,
-    },
-  );
-
-  return result;
-};
-
-export const deleteContactByID = (_id, userId) =>
-  ContactColection.findOneAndDelete({ _id, userId });
