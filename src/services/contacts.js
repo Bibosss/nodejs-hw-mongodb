@@ -36,20 +36,27 @@ export const getContactId = (contactId, userId) =>
 
 export const addContact = (payload) => ContactColection.create(payload);
 
-export const updateContact = async (_id, payload, options = {}, userId) => {
-  const { upsert = false } = options;
+export const updateContact = async (
+  userId,
+  contactId,
+  update,
+  options = {},
+) => {
   const result = await ContactColection.findOneAndUpdate(
-    { _id, userId: payload.userId },
-    payload,
+    { _id: contactId, userId },
+    update,
     {
       new: true,
-      upsert,
       includeResultMetadata: true,
+      ...options,
     },
   );
+
+  if (!result || !result.value) return null;
+
   return {
-    data: result.value,
-    isNew: upsert && result.lastErrorObject?.upserted,
+    contact: result.value,
+    isNew: !result?.lastErrorObject?.updatedExisting,
   };
 };
 
