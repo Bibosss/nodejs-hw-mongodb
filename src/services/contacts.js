@@ -38,22 +38,39 @@ export const addContact = (payload) => ContactColection.create(payload);
 
 export const updateContact = async (_id, payload, options = {}, userId) => {
   const { upsert = false } = options;
-  const rawResult = await ContactColection.findOneAndUpdate(
-    { _id, userId },
+  const result = await ContactColection.findOneAndUpdate(
+    { _id, userId: payload.userId },
     payload,
     {
+      new: true,
       upsert,
       includeResultMetadata: true,
     },
   );
-
-  if (!rawResult || !rawResult.value) return null;
-
   return {
-    data: rawResult.value,
-    isNew: Boolean(rawResult.lastErrorObject.upserted),
+    data: result.value,
+    isNew: upsert && result.lastErrorObject?.upserted,
   };
 };
 
 export const deleteContactByID = (_id, userId) =>
   ContactColection.findOneAndDelete({ _id, userId });
+
+// export const updateContact = async (_id, payload, options = {}, userId) => {
+//   const { upsert = false } = options;
+//   const rawResult = await ContactColection.findOneAndUpdate(
+//     { _id, userId },
+//     payload,
+//     {
+//       upsert,
+//       includeResultMetadata: true,
+//     },
+//   );
+
+//   if (!rawResult || !rawResult.value) return null;
+
+//   return {
+//     data: rawResult.value,
+//     isNew: Boolean(rawResult.lastErrorObject.upserted),
+//   };
+// };
