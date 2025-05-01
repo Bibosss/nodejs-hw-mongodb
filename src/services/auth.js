@@ -165,6 +165,6 @@ export const resetPassword = async (payload) => {
   );
 };
 
-export const getGoogleLink = () => {
-  return;
-};
+// export const getGoogleLink = () => {
+//   return;
+// };
