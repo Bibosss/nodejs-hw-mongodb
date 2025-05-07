@@ -11,6 +11,8 @@ import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { contactsSortFields } from '../db/models/contacts.js';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import { getEnvVar } from '../utils/getEnvVar.js';
+import { saveFileToLocal } from '../utils/saveFileToLocal.js';
 
 export const getContactsController = async (req, res, next) => {
   const paginationParams = parsePaginationParams(req.query);
@@ -51,9 +53,19 @@ export const getContactIdController = async (req, res, next) => {
 
 export const addContactController = async (req, res, next) => {
   const { _id: userId } = req.user;
-  let photo = null;
+  let photo = req.file;
 
-  const data = await addContact({ ...req.body, userId, photo });
+  let photoUrl;
+
+  if (photo) {
+    if (getEnvVar('ENABLE_CLOUDINARY') === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToLocal(photo);
+    }
+  }
+
+  const data = await addContact({ ...req.body, userId, photo: photoUrl });
 
   res.status(201).json({
     status: 201,
@@ -64,47 +76,42 @@ export const addContactController = async (req, res, next) => {
 
 export const upsertContactController = async (req, res, next) => {
   const { contactId } = req.params;
-  const { _id: userId } = req.user;
+  const userId = req.user._id;
 
-  const { data, isNew } = await updateContact(
-    contactId,
-    { ...req.body, userId },
-    {
-      upsert: true,
-    },
-  );
-  const status = isNew ? 201 : 200;
+  const result = await updateContact(userId, contactId, req.body, {
+    upsert: true,
+  });
+
+  const status = result.isNew ? 201 : 200;
 
   res.status(status).json({
     status,
     message: 'Successfully update contact',
-    data,
+    data: result.contact,
   });
 };
 
 export const patchContactController = async (req, res, next) => {
+  const userId = req.user._id;
   const { contactId } = req.params;
-  let photo = null;
+  const updateData = { ...req.body };
 
   if (req.file) {
     // posterUrl = await saveFileToLocal(req.file);
-    photo = await saveFileToCloudinary(req.file);
+    const photoUrl = await saveFileToCloudinary(req.file);
+    updateData.photo = photoUrl;
   }
 
-  const result = await updateContact(contactId, { ...req.body, photo, userId });
-
-  const { _id: userId } = req.user;
+  const result = await updateContact(userId, contactId, updateData);
 
   if (!result) {
     throw createHttpError(404, 'Contact not found');
   }
 
-  const { data } = result;
-
   res.json({
     status: 200,
     message: 'Successfully update contact',
-    data,
+    data: result.contact,
   });
 };
 
