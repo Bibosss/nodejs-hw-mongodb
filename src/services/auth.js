@@ -164,3 +164,7 @@ export const resetPassword = async (payload) => {
     { password: encryptedPassword },
   );
 };
+
+// export const getGoogleLink = () => {
+//   return;
+// };
