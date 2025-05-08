@@ -11,11 +11,9 @@ info:
 tags:
   - name: Contacts
     description: Operations about contacts.
-  - name: Auth
-    description: Auth operations.
 servers:
   - url: http://localhost:3000
-  - url: https://example.com/api/v1
+  - url: https://nodejs-hw-mongodb-5qnk.onrender.com
 paths:
   /contacts:
     get:
