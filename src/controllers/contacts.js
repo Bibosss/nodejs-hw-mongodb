@@ -13,19 +13,20 @@ import { contactsSortFields } from '../db/models/contacts.js';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import { getEnvVar } from '../utils/getEnvVar.js';
 import { saveFileToLocal } from '../utils/saveFileToLocal.js';
+import { parseContactFilterParams } from '../utils/filters/parseContactFilterParams.js';
 
 export const getContactsController = async (req, res, next) => {
   const paginationParams = parsePaginationParams(req.query);
   const sortParams = parseSortParams(req.query, contactsSortFields);
   const { _id: userId } = req.user;
-  // const filters = parseContactFilterParams(req.query);
-  // filters.userId = req.user._id;
+  const filters = parseContactFilterParams(req.query);
+  filters.userId = req.user._id;
 
   const data = await getContacts({
     userId,
     ...paginationParams,
     ...sortParams,
-    // filters,
+    filters,
   });
   res.json({
     status: 200,
